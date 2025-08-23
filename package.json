@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "npm install autoprefixer postcss",
     "clean": "rm -rf .next",
     "reinstall": "rm -rf node_modules package-lock.json && npm install"
   },
@@ -16,18 +15,21 @@
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
+    "autoprefixer": "^10.4.20",
     "bcryptjs": "^2.4.3",
     "framer-motion": "^10.16.4",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.263.1",
     "next": "14.0.0",
     "pg": "^8.11.3",
+    "postcss": "^8.4.47",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.62.0",
     "react-hot-toast": "^2.6.0",
     "react-slick": "^0.29.0",
     "slick-carousel": "^1.8.1",
+    "tailwindcss": "^3.4.13",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -37,11 +39,8 @@
     "@types/pg": "^8.15.5",
     "@types/react": "^18.2.31",
     "@types/react-dom": "^18.2.14",
-    "autoprefixer": "^10.4.20",
     "eslint": "^8.52.0",
     "eslint-config-next": "14.0.0",
-    "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.13",
     "typescript": "^5.2.2"
   }
 }
