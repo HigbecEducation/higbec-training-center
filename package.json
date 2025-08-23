@@ -17,6 +17,12 @@
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.19.11",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.2.14",
     "autoprefixer": "^10.4.21",
     "bcryptjs": "^2.4.3",
     "eslint": "^8.52.0",
@@ -35,13 +41,6 @@
     "slick-carousel": "^1.8.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.9.2",
-    "zod": "^3.25.76",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^20.19.11",
-    "@types/pg": "^8.15.5",
-    "@types/react": "^18.3.24",
-    "@types/react-dom": "^18.2.14"
-  },
-  "devDependencies": {}
+    "zod": "^3.25.76"
+  }
 }
