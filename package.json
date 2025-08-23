@@ -9,7 +9,8 @@
     "lint": "next lint",
     "clean": "rm -rf .next",
     "reinstall": "rm -rf node_modules package-lock.json && npm install",
-    "postinstall": "npm install autoprefixer postcss tailwindcss"
+    "postinstall": "npm install autoprefixer postcss tailwindcss",
+    "prepare": "npm install autoprefixer postcss tailwindcss"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
