@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { AdminModel, initializeDatabase } from "@/lib/postgresql";
+import { AdminModel, initializeDatabase } from "lib/postgresql";
 
 // Initialize database on startup
 let dbInitialized = false;
