@@ -4,7 +4,7 @@ import {
   initializeDatabase,
 } from "../../../../lib/postgresql";
 import { withAdminAuth } from "../../../../lib/AdminAuth";
-
+export const dynamic = "force-dynamic";
 // Initialize database on startup
 let dbInitialized = false;
 
