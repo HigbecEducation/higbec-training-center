@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import { ProjectRegistrationModel, initializeDatabase } from '@/lib/postgresql';
-import { withAdminAuth } from '@/lib/adminAuth';
+import { NextResponse } from "next/server";
+import { ProjectRegistrationModel, initializeDatabase } from "@/lib/postgresql";
+import { withAdminAuth } from "@/lib/AdminAuth";
 
 // Initialize database on startup
 let dbInitialized = false;
@@ -15,16 +15,15 @@ async function ensureDbInitialized() {
 async function handleGetStats(request) {
   try {
     await ensureDbInitialized();
-    
+
     // Get overall stats
     const stats = await ProjectRegistrationModel.getStats();
-    
+
     return NextResponse.json(stats);
-    
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    console.error("Error fetching stats:", error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: "Internal server error" },
       { status: 500 }
     );
   }
