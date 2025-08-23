@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "npm install autoprefixer postcss",
     "clean": "rm -rf .next",
     "reinstall": "rm -rf node_modules package-lock.json && npm install"
   },
