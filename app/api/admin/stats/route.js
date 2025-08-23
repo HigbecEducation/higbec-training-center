@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { ProjectRegistrationModel, initializeDatabase } from "lib/postgresql";
-import { withAdminAuth } from "lib/AdminAuth";
+import {
+  ProjectRegistrationModel,
+  initializeDatabase,
+} from "../../../../lib/postgresql";
+import { withAdminAuth } from "../../../../lib/AdminAuth";
 
 // Initialize database on startup
 let dbInitialized = false;

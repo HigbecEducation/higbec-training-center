@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { ProjectRegistrationModel, initializeDatabase } from "lib/postgresql";
+import {
+  ProjectRegistrationModel,
+  initializeDatabase,
+} from "../../../../lib/postgresql";
 
 // Initialize database on startup
 let dbInitialized = false;
