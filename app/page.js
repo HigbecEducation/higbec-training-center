@@ -1039,11 +1039,13 @@ const ContactSection = () => {
                 <div>
                   <h4 className="font-semibold">Address</h4>
                   <p className="text-gray-600">
-                    HIGBEC Training Center
+                    HIGBEC Pvt. Ltd.
                     <br />
-                    Technopark, Thiruvananthapuram
+                    Thapasya, EVRA-143
                     <br />
-                    Kerala, India - 695581
+                    Edapazhinji, Thiruvananthapuram
+                    <br />
+                    Kerala, India - 695014
                   </p>
                 </div>
               </div>
@@ -1052,8 +1054,8 @@ const ContactSection = () => {
                 <Phone className="w-6 h-6 text-[#28D4DB] mr-4 mt-1" />
                 <div>
                   <h4 className="font-semibold">Phone</h4>
-                  <p className="text-gray-600">+91 9876543210</p>
-                  <p className="text-gray-600">+91 9876543211</p>
+                  <p className="text-gray-600">+91 7994572595</p>
+                  <p className="text-gray-600">+91 9995174183</p>
                 </div>
               </div>
 
@@ -1061,8 +1063,8 @@ const ContactSection = () => {
                 <Mail className="w-6 h-6 text-[#28D4DB] mr-4 mt-1" />
                 <div>
                   <h4 className="font-semibold">Email</h4>
-                  <p className="text-gray-600">info@higbec.com</p>
-                  <p className="text-gray-600">support@higbec.com</p>
+                  <p className="text-gray-600">contactus.higbec@gmail.com</p>
+                  {/* <p className="text-gray-600">support@higbec.com</p> */}
                 </div>
               </div>
             </div>
@@ -1228,17 +1230,18 @@ const Footer = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4">Contact Info</h4>
             <div className="space-y-2 text-gray-400">
-              <p>Technopark, Thiruvananthapuram</p>
-              <p>Kerala, India - 695581</p>
-              <p>Phone: +91 9876543210</p>
-              <p>Email: info@higbec.com</p>
+              <p>Thapasya, EVRA-143</p>
+              <p>Kochar Road, Edapazhinji</p>
+              <p>Thiruvananthapuram, Kerala</p>
+              <p>Phone: +91 7994572595</p>
+              <p>Email:contactus.higbec@gmail.com</p>
             </div>
           </div>
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-gray-400">
-            © 2024 HIGBEC. All rights reserved. | Privacy Policy | Terms of
+            © 2025 HIGBEC. All rights reserved. | Privacy Policy | Terms of
             Service
           </p>
         </div>

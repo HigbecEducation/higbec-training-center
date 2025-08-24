@@ -56,5 +56,6 @@ scripts/verifu-setup.js
 scripts/createadmin.js
 scripts/createadminsupabase.js
 
+
 # Lock files (optional - some prefer to include)
 package-lock.json
