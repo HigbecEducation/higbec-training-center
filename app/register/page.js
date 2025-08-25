@@ -1,3 +1,4 @@
+// app/register/page.js
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -8,6 +9,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import toast, { Toaster } from "react-hot-toast";
+import QRCode from "qrcode";
 import {
   ArrowLeft,
   Plus,
@@ -98,20 +100,29 @@ const registrationSchema = z
       .optional(),
     paymentScreenshot: z
       .any()
-      .refine(
-        (file) => file && file.length > 0,
-        "Payment screenshot is required"
-      )
-      .refine(
-        (file) => file && file[0]?.size <= 5000000,
-        "File size should be less than 5MB"
-      )
-      .refine(
-        (file) =>
-          file &&
-          ["image/jpeg", "image/jpg", "image/png"].includes(file[0]?.type),
-        "Only JPG, JPEG and PNG files are allowed"
-      ),
+      .refine((file) => {
+        // Check if it's a FileList or File
+        if (file instanceof FileList) {
+          return file.length > 0;
+        }
+        if (file instanceof File) {
+          return true;
+        }
+        return false;
+      }, "Payment screenshot is required")
+      .refine((file) => {
+        // Get the actual file
+        const actualFile = file instanceof FileList ? file[0] : file;
+        return actualFile && actualFile.size <= 5000000;
+      }, "File size should be less than 5MB")
+      .refine((file) => {
+        // Get the actual file
+        const actualFile = file instanceof FileList ? file[0] : file;
+        return (
+          actualFile &&
+          ["image/jpeg", "image/jpg", "image/png"].includes(actualFile.type)
+        );
+      }, "Only JPG, JPEG and PNG files are allowed"),
   })
   .refine(
     (data) => {
@@ -136,11 +147,11 @@ const batchOptions = [
   "Diploma",
 ];
 
-// Payment details - you can modify these as needed
+// Updated payment details
 const PAYMENT_DETAILS = {
   amount: 3000,
-  upiId: "higbec@paytm", // Replace with actual UPI ID
-  merchantName: "HIGBEC",
+  upiId: "vyapar.173204604992@hdfcbank", // Updated UPI ID
+  merchantName: "HIGBEC PVT LTD", // Updated merchant name
   qrCodeUrl:
     "data:image/png;base64,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",
 };
@@ -153,6 +164,7 @@ export default function RegisterPage() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [upiIdCopied, setUpiIdCopied] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
   const totalSteps = 4; // Updated to 4 steps
 
   const {
@@ -198,19 +210,27 @@ export default function RegisterPage() {
     }
   };
 
-  // Handle file upload
+  // Fixed file upload handler
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // Validate file
+      // Validate file size
       if (file.size > 5000000) {
         toast.error("File size should be less than 5MB");
+        event.target.value = ""; // Clear the input
         return;
       }
 
+      // Validate file type
       if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
         toast.error("Only JPG, JPEG and PNG files are allowed");
+        event.target.value = ""; // Clear the input
         return;
+      }
+
+      // Clean up previous preview URL
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
       }
 
       setUploadedFile(file);
@@ -219,8 +239,8 @@ export default function RegisterPage() {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
 
-      // Update form value
-      setValue("paymentScreenshot", event.target.files);
+      // Update form value - set the file directly, not FileList
+      setValue("paymentScreenshot", file);
       clearErrors("paymentScreenshot");
 
       toast.success("Screenshot uploaded successfully!");
@@ -242,6 +262,69 @@ export default function RegisterPage() {
       fileInput.value = "";
     }
   };
+
+  // Generate QR Code on component mount
+  useEffect(() => {
+    const generateQRCode = async () => {
+      try {
+        // UPI payment string format
+        const upiString = `upi://pay?pa=${
+          PAYMENT_DETAILS.upiId
+        }&pn=${encodeURIComponent(PAYMENT_DETAILS.merchantName)}&am=${
+          PAYMENT_DETAILS.amount
+        }&cu=INR`;
+        const qrCodeDataUrl = await QRCode.toDataURL(upiString, {
+          width: 256,
+          margin: 2,
+          color: {
+            dark: "#000000",
+            light: "#FFFFFF",
+          },
+        });
+        setQrCodeUrl(qrCodeDataUrl);
+      } catch (error) {
+        console.error("Error generating QR code:", error);
+      }
+    };
+
+    generateQRCode();
+  }, []);
+
+  // Generate QR Code on component mount
+  useEffect(() => {
+    const generateQRCode = async () => {
+      try {
+        // UPI payment string format
+        const upiString = `upi://pay?pa=${
+          PAYMENT_DETAILS.upiId
+        }&pn=${encodeURIComponent(PAYMENT_DETAILS.merchantName)}&am=${
+          PAYMENT_DETAILS.amount
+        }&cu=INR`;
+        const qrCodeDataUrl = await QRCode.toDataURL(upiString, {
+          width: 256,
+          margin: 2,
+          color: {
+            dark: "#000000",
+            light: "#FFFFFF",
+          },
+        });
+        setQrCodeUrl(qrCodeDataUrl);
+      } catch (error) {
+        console.error("Error generating QR code:", error);
+      }
+    };
+
+    generateQRCode();
+  }, []);
+
+  // Clean up preview URL on component unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   // Step Navigation with enhanced validation
   const nextStep = async () => {
@@ -297,6 +380,13 @@ export default function RegisterPage() {
         return;
       }
 
+      // Validate payment screenshot specifically
+      if (!uploadedFile) {
+        toast.error("Please upload payment screenshot");
+        setIsSubmitting(false);
+        return;
+      }
+
       // Create FormData for file upload
       const formData = new FormData();
 
@@ -323,9 +413,7 @@ export default function RegisterPage() {
       });
 
       // Append the payment screenshot file
-      if (uploadedFile) {
-        formData.append("paymentScreenshot", uploadedFile);
-      }
+      formData.append("paymentScreenshot", uploadedFile);
 
       const response = await fetch("/api/register", {
         method: "POST",
@@ -347,7 +435,9 @@ export default function RegisterPage() {
 
         // Redirect to success page after a delay
         setTimeout(() => {
-          router.push(`/register/success?id=${result.id}`);
+          router.push(
+            `/register/success?id=${result.id}&projectId=${result.projectId}`
+          );
         }, 2000);
       } else {
         // Handle different types of errors
@@ -965,14 +1055,20 @@ export default function RegisterPage() {
             Scan QR Code
           </h3>
           <div className="bg-gray-100 rounded-lg p-4 mb-4">
-            {/* Replace this with actual QR code */}
-            <div className="w-48 h-48 mx-auto bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <QrCode className="w-16 h-16 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">QR Code</p>
-                <p className="text-xs text-gray-400">Scan with any UPI app</p>
+            {qrCodeUrl ? (
+              <img
+                src={qrCodeUrl}
+                alt="UPI Payment QR Code"
+                className="w-48 h-48 mx-auto border-2 border-white rounded-lg shadow-sm"
+              />
+            ) : (
+              <div className="w-48 h-48 mx-auto bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <QrCode className="w-16 h-16 text-gray-400 mx-auto mb-2 animate-pulse" />
+                  <p className="text-sm text-gray-500">Generating QR Code...</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
           <p className="text-sm text-gray-600">
             Scan this QR code with any UPI app to pay
@@ -996,6 +1092,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={copyUpiId}
                   className="text-blue-500 hover:text-blue-600 transition-colors duration-200"
+                  title="Copy UPI ID"
                 >
                   {upiIdCopied ? (
                     <Check className="w-4 h-4" />
@@ -1036,7 +1133,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* File Upload Section */}
+      {/* File Upload Section - Fixed */}
       <div className="form-group">
         <label className="form-label flex items-center">
           <Upload className="w-4 h-4 mr-2" />
@@ -1051,7 +1148,6 @@ export default function RegisterPage() {
               accept="image/jpeg,image/jpg,image/png"
               onChange={handleFileUpload}
               className="hidden"
-              {...register("paymentScreenshot")}
             />
             <label htmlFor="paymentScreenshot" className="cursor-pointer">
               <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -1095,6 +1191,7 @@ export default function RegisterPage() {
                 type="button"
                 onClick={removeUploadedFile}
                 className="text-red-500 hover:text-red-700 transition-colors duration-300"
+                title="Remove file"
               >
                 <Minus className="w-5 h-5" />
               </button>

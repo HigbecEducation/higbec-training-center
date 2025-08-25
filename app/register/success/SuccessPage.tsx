@@ -13,13 +13,16 @@ import {
   Download,
   Share2,
   ArrowRight,
+  Copy,
 } from "lucide-react";
 
 export default function SuccessPage() {
   const searchParams = useSearchParams();
   const registrationId = searchParams.get("id");
+  const projectId = searchParams.get("projectId"); // Get project ID from URL
   const [registrationData, setRegistrationData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (registrationId) {
@@ -41,15 +44,26 @@ export default function SuccessPage() {
     }
   };
 
+  const copyProjectId = async () => {
+    try {
+      await navigator.clipboard.writeText(projectId || registrationData?.projectId || '');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy project ID');
+    }
+  };
+
   const generatePDF = () => {
     console.log("Generating PDF...");
   };
 
   const shareRegistration = () => {
+    const projectIdToShare = projectId || registrationData?.projectId;
     if (navigator.share) {
       navigator.share({
         title: "HIGBEC Project Registration",
-        text: `I've successfully registered my project "${registrationData?.projectTitle}" with HIGBEC!`,
+        text: `I've successfully registered my project "${registrationData?.projectTitle}" with HIGBEC! Project ID: ${projectIdToShare}`,
         url: window.location.href,
       });
     }
@@ -87,6 +101,32 @@ export default function SuccessPage() {
               Congratulations! Your project has been successfully registered
               with HIGBEC. We'll contact you soon to discuss the next steps.
             </p>
+
+            {/* Project ID Display - Prominent */}
+            {(projectId || registrationData?.projectId) && (
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mt-6 max-w-md mx-auto">
+                <h3 className="text-lg font-semibold text-blue-800 mb-2">Your Project ID</h3>
+                <div className="flex items-center justify-center space-x-3">
+                  <span className="text-3xl font-bold text-blue-600 font-mono">
+                    {projectId || registrationData?.projectId}
+                  </span>
+                  <button
+                    onClick={copyProjectId}
+                    className="p-2 hover:bg-blue-100 rounded-lg transition-colors duration-200"
+                    title="Copy Project ID"
+                  >
+                    {copied ? (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <Copy className="w-5 h-5 text-blue-500" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-sm text-blue-600 mt-2">
+                  {copied ? 'Copied to clipboard!' : 'Click to copy'}
+                </p>
+              </div>
+            )}
           </motion.div>
 
           {/* Registration Details Card */}
@@ -145,10 +185,16 @@ export default function SuccessPage() {
                       </span>
                     </div>
                     <div className="flex items-center">
+                      <strong className="w-32 text-gray-700">Project ID:</strong>
+                      <span className="text-blue-600 font-mono font-semibold">
+                        {projectId || registrationData?.projectId}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
                       <strong className="w-32 text-gray-700">
                         Registration ID:
                       </strong>
-                      <span className="text-blue-600 font-mono">
+                      <span className="text-gray-600 font-mono">
                         {registrationId}
                       </span>
                     </div>
@@ -263,7 +309,7 @@ export default function SuccessPage() {
                 </div>
                 <h3 className="font-semibold mb-2">Review & Verification</h3>
                 <p className="text-sm text-gray-600">
-                  Our team will review your registration and verify the details
+                  Our team will review your registration and verify the payment details
                   within 24 hours.
                 </p>
               </div>
@@ -274,7 +320,7 @@ export default function SuccessPage() {
                 <h3 className="font-semibold mb-2">Initial Consultation</h3>
                 <p className="text-sm text-gray-600">
                   We'll schedule a consultation call to discuss your project
-                  requirements and goals.
+                  requirements and assign a mentor.
                 </p>
               </div>
               <div className="text-center">
@@ -284,7 +330,7 @@ export default function SuccessPage() {
                 <h3 className="font-semibold mb-2">Project Kickoff</h3>
                 <p className="text-sm text-gray-600">
                   Begin your project development journey with dedicated mentor
-                  support.
+                  support and resources.
                 </p>
               </div>
             </div>
@@ -306,7 +352,7 @@ export default function SuccessPage() {
                   <Phone className="w-6 h-6 text-green-500" />
                 </div>
                 <h3 className="font-semibold mb-2">Call Us</h3>
-                <p className="text-blue-600">+91 9876543210</p>
+                <p className="text-blue-600">+91 7994572595</p>
                 <p className="text-sm text-gray-600">Mon-Fri, 9 AM - 6 PM</p>
               </div>
               <div className="text-center">
@@ -314,7 +360,7 @@ export default function SuccessPage() {
                   <Mail className="w-6 h-6 text-blue-500" />
                 </div>
                 <h3 className="font-semibold mb-2">Email Us</h3>
-                <p className="text-blue-600">support@higbec.com</p>
+                <p className="text-blue-600">contactus.higbec@gmail.com</p>
                 <p className="text-sm text-gray-600">
                   We respond within 24 hours
                 </p>
@@ -353,10 +399,17 @@ export default function SuccessPage() {
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
             </div>
-            <p className="text-sm text-gray-600 mt-4">
-              Keep this registration ID safe:{" "}
-              <span className="font-mono text-blue-600">{registrationId}</span>
-            </p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-sm text-yellow-800">
+                <strong>Important:</strong> Please save your Project ID:{" "}
+                <span className="font-mono text-yellow-900 font-bold">
+                  {projectId || registrationData?.projectId}
+                </span>
+              </p>
+              <p className="text-xs text-yellow-700 mt-1">
+                You'll need this ID for all future communications about your project.
+              </p>
+            </div>
           </motion.div>
         </div>
       </div>

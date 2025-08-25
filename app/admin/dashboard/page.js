@@ -77,6 +77,75 @@ export default function AdminDashboard() {
 
   const itemsPerPage = 10;
 
+  // Helper function to format date in IST
+  const formatDateIST = (dateString) => {
+    if (!dateString) return "N/A";
+
+    const date = new Date(dateString);
+
+    // Format date in IST
+    return date.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Helper function to format just date in IST
+  const formatDateOnlyIST = (dateString) => {
+    if (!dateString) return "N/A";
+
+    const date = new Date(dateString);
+
+    return date.toLocaleDateString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  };
+
+  // Helper function to format just time in IST
+  const formatTimeOnlyIST = (dateString) => {
+    if (!dateString) return "N/A";
+
+    const date = new Date(dateString);
+
+    return date.toLocaleTimeString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Helper function to get payment screenshot URL
+  const getPaymentScreenshotUrl = (registration) => {
+    if (registration.paymentScreenshotPath) {
+      // If it starts with /, it's already a full path
+      if (registration.paymentScreenshotPath.startsWith("/")) {
+        return registration.paymentScreenshotPath;
+      }
+      // Otherwise, construct the full path
+      return `/uploads/payment-screenshots/${registration.paymentScreenshotPath}`;
+    }
+
+    // Legacy field name compatibility
+    if (registration.paymentScreenshot) {
+      if (registration.paymentScreenshot.startsWith("/")) {
+        return registration.paymentScreenshot;
+      }
+      return `/uploads/payment-screenshots/${registration.paymentScreenshot}`;
+    }
+
+    return null;
+  };
+
   useEffect(() => {
     fetchRegistrations();
   }, [
@@ -314,9 +383,9 @@ export default function AdminDashboard() {
         ? reg.groupMembers.map((m) => `${m.name} (${m.phoneNumber})`).join("; ")
         : "",
       Status: reg.status,
-      "Payment Screenshot": reg.paymentScreenshot ? "Yes" : "No",
-      "Registration Date": new Date(reg.createdAt).toLocaleDateString(),
-      "Last Updated": new Date(reg.updatedAt).toLocaleDateString(),
+      "Payment Screenshot": getPaymentScreenshotUrl(reg) ? "Yes" : "No",
+      "Registration Date (IST)": formatDateIST(reg.createdAt),
+      "Last Updated (IST)": formatDateIST(reg.updatedAt),
     }));
 
     const headers = Object.keys(csvData[0]);
@@ -867,7 +936,7 @@ export default function AdminDashboard() {
                     onClick={() => handleSort("createdAt")}
                   >
                     <div className="flex items-center">
-                      Registration Date
+                      Registration Date (IST)
                       {sortField === "createdAt" &&
                         (sortDirection === "asc" ? (
                           <ArrowUp className="w-4 h-4 ml-1" />
@@ -976,11 +1045,11 @@ export default function AdminDashboard() {
                         )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {registration.paymentScreenshot ? (
+                      {getPaymentScreenshotUrl(registration) ? (
                         <button
                           onClick={() =>
                             openImageModal(
-                              `/api/uploads/${registration.paymentScreenshot}`,
+                              getPaymentScreenshotUrl(registration),
                               `Payment Screenshot - ${registration.fullName}`
                             )
                           }
@@ -1013,21 +1082,15 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       <div className="font-medium flex items-center">
                         <CalendarIcon className="w-3 h-3 mr-1" />
-                        {new Date(registration.createdAt).toLocaleDateString()}
+                        {formatDateOnlyIST(registration.createdAt)}
                       </div>
                       <div className="text-xs text-gray-500 flex items-center">
                         <Clock className="w-3 h-3 mr-1" />
-                        {new Date(registration.createdAt).toLocaleTimeString(
-                          [],
-                          { hour: "2-digit", minute: "2-digit" }
-                        )}
+                        {formatTimeOnlyIST(registration.createdAt)}
                       </div>
                       {registration.updatedAt !== registration.createdAt && (
                         <div className="text-xs text-blue-400 mt-1">
-                          Updated:{" "}
-                          {new Date(
-                            registration.updatedAt
-                          ).toLocaleDateString()}
+                          Updated: {formatDateOnlyIST(registration.updatedAt)}
                         </div>
                       )}
                     </td>
@@ -1390,7 +1453,7 @@ export default function AdminDashboard() {
                   )}
 
                 {/* Payment Screenshot */}
-                {selectedRegistration.paymentScreenshot && (
+                {getPaymentScreenshotUrl(selectedRegistration) && (
                   <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                       <ImageIcon className="w-5 h-5 mr-2" />
@@ -1398,12 +1461,12 @@ export default function AdminDashboard() {
                     </h3>
                     <div className="flex items-center space-x-4">
                       <img
-                        src={`/api/uploads/${selectedRegistration.paymentScreenshot}`}
+                        src={getPaymentScreenshotUrl(selectedRegistration)}
                         alt="Payment Screenshot"
                         className="w-32 h-32 object-cover rounded-lg border border-gray-600 cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-lg"
                         onClick={() =>
                           openImageModal(
-                            `/api/uploads/${selectedRegistration.paymentScreenshot}`,
+                            getPaymentScreenshotUrl(selectedRegistration),
                             `Payment Screenshot - ${selectedRegistration.fullName}`
                           )
                         }
@@ -1412,7 +1475,7 @@ export default function AdminDashboard() {
                         <button
                           onClick={() =>
                             openImageModal(
-                              `/api/uploads/${selectedRegistration.paymentScreenshot}`,
+                              getPaymentScreenshotUrl(selectedRegistration),
                               `Payment Screenshot - ${selectedRegistration.fullName}`
                             )
                           }
@@ -1424,7 +1487,7 @@ export default function AdminDashboard() {
                         <button
                           onClick={() =>
                             downloadImage(
-                              `/api/uploads/${selectedRegistration.paymentScreenshot}`,
+                              getPaymentScreenshotUrl(selectedRegistration),
                               `payment-${selectedRegistration.fullName.replace(
                                 /\s+/g,
                                 "-"
@@ -1464,18 +1527,24 @@ export default function AdminDashboard() {
                     <div>
                       <label className="text-sm text-gray-400 flex items-center">
                         <CalendarIcon className="w-4 h-4 mr-2" />
-                        Registration Date
+                        Registration Date (IST)
                       </label>
                       <p className="text-white font-medium">
-                        {new Date(
-                          selectedRegistration.createdAt
-                        ).toLocaleDateString()}{" "}
-                        at{" "}
-                        {new Date(
-                          selectedRegistration.createdAt
-                        ).toLocaleTimeString()}
+                        {formatDateIST(selectedRegistration.createdAt)}
                       </p>
                     </div>
+                    {selectedRegistration.updatedAt !==
+                      selectedRegistration.createdAt && (
+                      <div>
+                        <label className="text-sm text-gray-400 flex items-center">
+                          <Clock className="w-4 h-4 mr-2" />
+                          Last Updated (IST)
+                        </label>
+                        <p className="text-white font-medium">
+                          {formatDateIST(selectedRegistration.updatedAt)}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Quick Actions */}
@@ -1662,7 +1731,19 @@ export default function AdminDashboard() {
                     registrations.filter((r) => {
                       const today = new Date();
                       const regDate = new Date(r.createdAt);
-                      return regDate.toDateString() === today.toDateString();
+                      const todayIST = new Date(
+                        today.toLocaleString("en-US", {
+                          timeZone: "Asia/Kolkata",
+                        })
+                      );
+                      const regDateIST = new Date(
+                        regDate.toLocaleString("en-US", {
+                          timeZone: "Asia/Kolkata",
+                        })
+                      );
+                      return (
+                        regDateIST.toDateString() === todayIST.toDateString()
+                      );
                     }).length
                   }
                 </div>

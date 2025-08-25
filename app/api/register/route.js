@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { ProjectRegistrationModel, initializeDatabase } from "../../../lib/postgresql";
+import {
+  ProjectRegistrationModel,
+  initializeDatabase,
+} from "../../../lib/postgresql";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 // Initialize database on startup
 let dbInitialized = false;
@@ -15,7 +20,38 @@ export async function POST(request) {
   try {
     await ensureDbInitialized();
 
-    const data = await request.json();
+    // Check content type to determine how to parse the request
+    const contentType = request.headers.get("content-type") || "";
+    let data;
+    let paymentScreenshot = null;
+    let screenshotPath = null;
+
+    if (contentType.includes("multipart/form-data")) {
+      // Parse FormData for file upload
+      const formData = await request.formData();
+
+      // Extract form fields
+      data = {
+        fullName: formData.get("fullName"),
+        phoneNumber: formData.get("phoneNumber"),
+        email: formData.get("email"),
+        collegeName: formData.get("collegeName"),
+        branch: formData.get("branch"),
+        semester: formData.get("semester"),
+        batchType: formData.get("batchType"),
+        registrationType: formData.get("registrationType"),
+        projectTitle: formData.get("projectTitle"),
+        groupMembers: formData.get("groupMembers")
+          ? JSON.parse(formData.get("groupMembers"))
+          : [],
+      };
+
+      // Get payment screenshot file
+      paymentScreenshot = formData.get("paymentScreenshot");
+    } else {
+      // Parse JSON for backwards compatibility
+      data = await request.json();
+    }
 
     // Validate required fields
     const requiredFields = [
@@ -35,6 +71,61 @@ export async function POST(request) {
         return NextResponse.json(
           { message: `${field} is required` },
           { status: 400 }
+        );
+      }
+    }
+
+    // Validate payment screenshot if provided
+    if (paymentScreenshot && paymentScreenshot.size > 0) {
+      // Validate file type
+      if (!paymentScreenshot.type.startsWith("image/")) {
+        return NextResponse.json(
+          { message: "Payment screenshot must be an image file" },
+          { status: 400 }
+        );
+      }
+
+      // Validate file size (5MB limit)
+      if (paymentScreenshot.size > 5 * 1024 * 1024) {
+        return NextResponse.json(
+          { message: "Payment screenshot must be less than 5MB" },
+          { status: 400 }
+        );
+      }
+
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = path.join(
+        process.cwd(),
+        "public",
+        "uploads",
+        "payment-screenshots"
+      );
+      try {
+        await mkdir(uploadsDir, { recursive: true });
+      } catch (error) {
+        console.error("Error creating uploads directory:", error);
+      }
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const extension = paymentScreenshot.name.split(".").pop();
+      const filename = `payment_${timestamp}_${Math.random()
+        .toString(36)
+        .substring(7)}.${extension}`;
+      const filepath = path.join(uploadsDir, filename);
+
+      // Save file
+      try {
+        const bytes = await paymentScreenshot.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        await writeFile(filepath, buffer);
+        // Store just the filename, not the full path
+        screenshotPath = filename;
+      } catch (error) {
+        console.error("Error saving file:", error);
+        return NextResponse.json(
+          { message: "Error uploading payment screenshot" },
+          { status: 500 }
         );
       }
     }
@@ -153,6 +244,7 @@ export async function POST(request) {
               phoneNumber: member.phoneNumber.trim(),
             }))
           : [],
+      paymentScreenshotPath: screenshotPath, // Store filename only
     };
 
     // Create new registration
@@ -165,7 +257,22 @@ export async function POST(request) {
       {
         message: "Registration successful",
         id: savedRegistration.id,
-        registrationDate: savedRegistration.created_at,
+        projectId: savedRegistration.project_id,
+        registrationNumber: `HIGBEC-${savedRegistration.id
+          .toString()
+          .padStart(6, "0")}`,
+        registrationDate: new Date(savedRegistration.created_at).toLocaleString(
+          "en-IN",
+          {
+            timeZone: "Asia/Kolkata",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }
+        ),
       },
       { status: 201 }
     );
@@ -252,23 +359,35 @@ export async function GET(request) {
     const totalPages = Math.ceil(totalCount / limit);
 
     // Transform registrations to match frontend expectations
-    const transformedRegistrations = registrations.map((reg) => ({
-      _id: reg.id, // For compatibility with existing frontend code
-      id: reg.id,
-      fullName: reg.full_name,
-      phoneNumber: reg.phone_number,
-      email: reg.email,
-      collegeName: reg.college_name,
-      branch: reg.branch,
-      semester: reg.semester,
-      batchType: reg.batch_type,
-      registrationType: reg.registration_type,
-      projectTitle: reg.project_title,
-      groupMembers: reg.group_members || [],
-      status: reg.status,
-      createdAt: reg.created_at,
-      updatedAt: reg.updated_at,
-    }));
+    const transformedRegistrations = registrations.map((reg) => {
+      console.log("Raw database row:", reg); // Debug log
+
+      return {
+        _id: reg.id, // For compatibility with existing frontend code
+        id: reg.id,
+        projectId: reg.project_id,
+        fullName: reg.full_name,
+        phoneNumber: reg.phone_number,
+        email: reg.email,
+        collegeName: reg.college_name,
+        branch: reg.branch,
+        semester: reg.semester,
+        batchType: reg.batch_type,
+        registrationType: reg.registration_type,
+        projectTitle: reg.project_title,
+        groupMembers: reg.group_members || [],
+        // Handle different possible field names for payment screenshot
+        paymentScreenshot:
+          reg.payment_screenshot_path || reg.payment_screenshot || null,
+        paymentScreenshotPath:
+          reg.payment_screenshot_path || reg.payment_screenshot || null,
+        status: reg.status,
+        createdAt: reg.created_at,
+        updatedAt: reg.updated_at,
+      };
+    });
+
+    console.log("Transformed registrations:", transformedRegistrations); // Debug log
 
     return NextResponse.json({
       registrations: transformedRegistrations,
