@@ -108,7 +108,7 @@ export default function SuccessPage() {
 
     // Academic Information
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 10,
+      startY: (doc.lastAutoTable?.finalY || 10) + 10,
       head: [["Academic Information", ""]],
       body: [
         ["College", registrationData.collegeName],
@@ -139,7 +139,7 @@ export default function SuccessPage() {
     }
 
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 10,
+      startY: (doc.lastAutoTable?.finalY || 10) + 10,
       head: [["Project Information", ""]],
       body: projectInfoBody,
       theme: "grid",
