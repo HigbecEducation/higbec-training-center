@@ -15,6 +15,8 @@ import {
   ArrowRight,
   Copy,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function SuccessPage() {
   const searchParams = useSearchParams();
@@ -46,16 +48,123 @@ export default function SuccessPage() {
 
   const copyProjectId = async () => {
     try {
-      await navigator.clipboard.writeText(projectId || registrationData?.projectId || '');
+      await navigator.clipboard.writeText(
+        projectId || registrationData?.projectId || ""
+      );
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy project ID');
+      console.error("Failed to copy project ID");
     }
   };
 
   const generatePDF = () => {
-    console.log("Generating PDF...");
+    if (!registrationData) return;
+
+    const doc = new jsPDF();
+
+    // Company Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(44, 62, 80);
+    doc.text("HIGBEC", 14, 20);
+
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text("Innovating the Future Together", 14, 28);
+    doc.text(
+      "Email: contactus.higbec@gmail.com | Phone: +91 7994572595",
+      14,
+      34
+    );
+
+    doc.setDrawColor(0, 102, 204);
+    doc.setLineWidth(0.5);
+    doc.line(14, 38, 196, 38);
+
+    // Title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Project Registration Details", 14, 50);
+
+    // Project & Registration IDs
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Project ID: ${projectId || registrationData.projectId}`, 14, 60);
+
+    // Personal Information
+    autoTable(doc, {
+      startY: 80,
+      head: [["Personal Information", ""]],
+      body: [
+        ["Name", registrationData.fullName],
+        ["Email", registrationData.email],
+        ["Phone", registrationData.phoneNumber],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [0, 102, 204] },
+    });
+
+    // Academic Information
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [["Academic Information", ""]],
+      body: [
+        ["College", registrationData.collegeName],
+        ["Branch", registrationData.branch],
+        ["Semester", registrationData.semester],
+        ["Batch Type", registrationData.batchType],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [0, 102, 204] },
+    });
+
+    // Project Information
+    const projectInfoBody = [
+      ["Project Title", registrationData.projectTitle],
+      ["Registration Type", registrationData.registrationType],
+    ];
+
+    if (
+      registrationData.groupMembers &&
+      registrationData.groupMembers.length > 0
+    ) {
+      registrationData.groupMembers.forEach((member: any, index: number) => {
+        projectInfoBody.push([
+          `Group Member ${index + 1}`,
+          `${member.name} (${member.phoneNumber})`,
+        ]);
+      });
+    }
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [["Project Information", ""]],
+      body: projectInfoBody,
+      theme: "grid",
+      headStyles: { fillColor: [0, 102, 204] },
+    });
+
+    // Footer
+    const pageHeight = doc.internal.pageSize.height;
+    doc.setFontSize(10);
+    doc.setTextColor(150);
+    doc.text(
+      "Thank you for registering with HIGBEC. Please keep this document safe for future reference.",
+      14,
+      pageHeight - 20
+    );
+    doc.text(
+      "Generated on: " + new Date().toLocaleString(),
+      14,
+      pageHeight - 12
+    );
+
+    // Save
+    doc.save(
+      `HIGBEC_Registration_${projectId || registrationData.projectId}.pdf`
+    );
   };
 
   const shareRegistration = () => {
@@ -105,7 +214,9 @@ export default function SuccessPage() {
             {/* Project ID Display - Prominent */}
             {(projectId || registrationData?.projectId) && (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mt-6 max-w-md mx-auto">
-                <h3 className="text-lg font-semibold text-blue-800 mb-2">Your Project ID</h3>
+                <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                  Your Project ID
+                </h3>
                 <div className="flex items-center justify-center space-x-3">
                   <span className="text-3xl font-bold text-blue-600 font-mono">
                     {projectId || registrationData?.projectId}
@@ -123,7 +234,7 @@ export default function SuccessPage() {
                   </button>
                 </div>
                 <p className="text-sm text-blue-600 mt-2">
-                  {copied ? 'Copied to clipboard!' : 'Click to copy'}
+                  {copied ? "Copied to clipboard!" : "Click to copy"}
                 </p>
               </div>
             )}
@@ -185,7 +296,9 @@ export default function SuccessPage() {
                       </span>
                     </div>
                     <div className="flex items-center">
-                      <strong className="w-32 text-gray-700">Project ID:</strong>
+                      <strong className="w-32 text-gray-700">
+                        Project ID:
+                      </strong>
                       <span className="text-blue-600 font-mono font-semibold">
                         {projectId || registrationData?.projectId}
                       </span>
@@ -309,8 +422,8 @@ export default function SuccessPage() {
                 </div>
                 <h3 className="font-semibold mb-2">Review & Verification</h3>
                 <p className="text-sm text-gray-600">
-                  Our team will review your registration and verify the payment details
-                  within 24 hours.
+                  Our team will review your registration and verify the payment
+                  details within 24 hours.
                 </p>
               </div>
               <div className="text-center">
@@ -407,7 +520,8 @@ export default function SuccessPage() {
                 </span>
               </p>
               <p className="text-xs text-yellow-700 mt-1">
-                You'll need this ID for all future communications about your project.
+                You'll need this ID for all future communications about your
+                project.
               </p>
             </div>
           </motion.div>

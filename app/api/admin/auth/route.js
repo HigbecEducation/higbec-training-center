@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { AdminModel, initializeDatabase } from "../../../../lib/postgresql";
+import { Console } from "console";
 
 // Initialize database on startup
 let dbInitialized = false;
@@ -56,8 +57,9 @@ async function handleLogin({ email, password }) {
 
     // Find admin by email
     const admin = await AdminModel.findByEmail(email.toLowerCase().trim());
-
+    // console.log("8888888888888888889999999999999999999999999999999999999999");
     if (!admin) {
+      // console.log(email.toLowerCase().trim());
       return NextResponse.json(
         { message: "Invalid credentials" },
         { status: 401 }
@@ -68,6 +70,7 @@ async function handleLogin({ email, password }) {
     const isPasswordValid = await bcryptjs.compare(password, admin.password);
 
     if (!isPasswordValid) {
+      // console.log("no password");
       return NextResponse.json(
         { message: "Invalid credentials" },
         { status: 401 }
