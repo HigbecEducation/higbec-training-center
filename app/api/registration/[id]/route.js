@@ -3,6 +3,7 @@ import {
   ProjectRegistrationModel,
   initializeDatabase,
 } from "../../../../lib/postgresql";
+import { deleteFileFromSupabase } from "../../../../lib/supabase";
 
 // Initialize database on startup
 let dbInitialized = false;
@@ -14,25 +15,21 @@ async function ensureDbInitialized() {
   }
 }
 
+// GET registration by ID
 export async function GET(request, { params }) {
   try {
     await ensureDbInitialized();
 
     const { id } = params;
 
-    // Validate ID format (should be a positive integer)
-    const registrationId = parseInt(id);
-    if (!registrationId || registrationId <= 0) {
+    if (!id) {
       return NextResponse.json(
-        { message: "Invalid registration ID format" },
+        { message: "Registration ID is required" },
         { status: 400 }
       );
     }
 
-    // Find registration by ID
-    const registration = await ProjectRegistrationModel.findById(
-      registrationId
-    );
+    const registration = await ProjectRegistrationModel.findById(parseInt(id));
 
     if (!registration) {
       return NextResponse.json(
@@ -41,10 +38,10 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Transform to match frontend expectations
+    // Transform the response to match frontend expectations
     const transformedRegistration = {
-      _id: registration.id, // For compatibility
       id: registration.id,
+      projectId: registration.project_id,
       fullName: registration.full_name,
       phoneNumber: registration.phone_number,
       email: registration.email,
@@ -55,6 +52,9 @@ export async function GET(request, { params }) {
       registrationType: registration.registration_type,
       projectTitle: registration.project_title,
       groupMembers: registration.group_members || [],
+      paymentScreenshot: registration.payment_screenshot_path,
+      paymentScreenshotPath: registration.payment_screenshot_path,
+      paymentScreenshotFileName: registration.payment_screenshot_file_name,
       status: registration.status,
       createdAt: registration.created_at,
       updatedAt: registration.updated_at,
@@ -70,67 +70,41 @@ export async function GET(request, { params }) {
   }
 }
 
+// UPDATE registration status
 export async function PUT(request, { params }) {
   try {
     await ensureDbInitialized();
 
     const { id } = params;
-    const updateData = await request.json();
+    const body = await request.json();
 
-    // Validate ID format
-    const registrationId = parseInt(id);
-    if (!registrationId || registrationId <= 0) {
+    if (!id) {
       return NextResponse.json(
-        { message: "Invalid registration ID format" },
+        { message: "Registration ID is required" },
         { status: 400 }
       );
     }
 
-    // Validate update data
-    const allowedFields = ["status", "project_title", "group_members"];
-    const filteredData = {};
-
-    Object.keys(updateData).forEach((key) => {
-      // Convert camelCase to snake_case for database
-      const dbKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
-      if (allowedFields.includes(dbKey)) {
-        filteredData[dbKey] = updateData[key];
-      }
-    });
-
-    // Validate status if provided
-    if (
-      filteredData.status &&
-      !["pending", "approved", "rejected"].includes(filteredData.status)
-    ) {
+    if (!body.status) {
       return NextResponse.json(
-        { message: "Invalid status value" },
+        { message: "Status is required" },
         { status: 400 }
       );
     }
 
-    // Validate and stringify group_members if provided
-    if (filteredData.group_members !== undefined) {
-      if (!Array.isArray(filteredData.group_members)) {
-        return NextResponse.json(
-          { message: "Group members must be an array" },
-          { status: 400 }
-        );
-      }
-      filteredData.group_members = JSON.stringify(filteredData.group_members);
-    }
-
-    if (Object.keys(filteredData).length === 0) {
+    // Validate status
+    const validStatuses = ["pending", "approved", "rejected"];
+    if (!validStatuses.includes(body.status)) {
       return NextResponse.json(
-        { message: "No valid fields to update" },
+        { message: "Invalid status. Must be pending, approved, or rejected" },
         { status: 400 }
       );
     }
 
-    // Update registration
-    const updatedRegistration = await ProjectRegistrationModel.updateById(
-      registrationId,
-      filteredData
+    // Update the registration
+    const updatedRegistration = await ProjectRegistrationModel.updateStatus(
+      parseInt(id),
+      body.status
     );
 
     if (!updatedRegistration) {
@@ -140,10 +114,10 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Transform response
+    // Transform the response
     const transformedRegistration = {
-      _id: updatedRegistration.id,
       id: updatedRegistration.id,
+      projectId: updatedRegistration.project_id,
       fullName: updatedRegistration.full_name,
       phoneNumber: updatedRegistration.phone_number,
       email: updatedRegistration.email,
@@ -154,27 +128,21 @@ export async function PUT(request, { params }) {
       registrationType: updatedRegistration.registration_type,
       projectTitle: updatedRegistration.project_title,
       groupMembers: updatedRegistration.group_members || [],
+      paymentScreenshot: updatedRegistration.payment_screenshot_path,
+      paymentScreenshotPath: updatedRegistration.payment_screenshot_path,
+      paymentScreenshotFileName:
+        updatedRegistration.payment_screenshot_file_name,
       status: updatedRegistration.status,
       createdAt: updatedRegistration.created_at,
       updatedAt: updatedRegistration.updated_at,
     };
 
     return NextResponse.json({
-      message: "Registration updated successfully",
+      message: "Registration status updated successfully",
       registration: transformedRegistration,
     });
   } catch (error) {
     console.error("Error updating registration:", error);
-
-    // Handle PostgreSQL constraint violations
-    if (error.code === "23514") {
-      // Check constraint violation
-      return NextResponse.json(
-        { message: "Invalid data provided. Please check your input." },
-        { status: 400 }
-      );
-    }
-
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }
@@ -182,35 +150,68 @@ export async function PUT(request, { params }) {
   }
 }
 
+// DELETE registration
 export async function DELETE(request, { params }) {
   try {
     await ensureDbInitialized();
 
     const { id } = params;
 
-    // Validate ID format
-    const registrationId = parseInt(id);
-    if (!registrationId || registrationId <= 0) {
+    if (!id) {
       return NextResponse.json(
-        { message: "Invalid registration ID format" },
+        { message: "Registration ID is required" },
         { status: 400 }
       );
     }
 
-    // Delete registration
-    const deletedRegistration = await ProjectRegistrationModel.deleteById(
-      registrationId
-    );
+    // Get the registration first to access file info
+    const registration = await ProjectRegistrationModel.findById(parseInt(id));
 
-    if (!deletedRegistration) {
+    if (!registration) {
       return NextResponse.json(
         { message: "Registration not found" },
         { status: 404 }
       );
     }
 
+    // Delete the file from Supabase Storage if it exists
+    if (registration.payment_screenshot_file_name) {
+      console.log(
+        "Deleting file from Supabase:",
+        registration.payment_screenshot_file_name
+      );
+
+      const deleteResult = await deleteFileFromSupabase(
+        registration.payment_screenshot_file_name,
+        "uploads"
+      );
+
+      if (!deleteResult.success) {
+        console.warn(
+          "Failed to delete file from Supabase:",
+          deleteResult.error
+        );
+        // Continue with registration deletion even if file deletion fails
+      } else {
+        console.log("File deleted successfully from Supabase");
+      }
+    }
+
+    // Delete the registration from database
+    const deletedRegistration = await ProjectRegistrationModel.delete(
+      parseInt(id)
+    );
+
+    if (!deletedRegistration) {
+      return NextResponse.json(
+        { message: "Failed to delete registration" },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       message: "Registration deleted successfully",
+      deletedId: parseInt(id),
     });
   } catch (error) {
     console.error("Error deleting registration:", error);

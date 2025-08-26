@@ -3,8 +3,7 @@ import {
   ProjectRegistrationModel,
   initializeDatabase,
 } from "../../../lib/postgresql";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { uploadFileToSupabase } from "../../../lib/supabase";
 
 // Initialize database on startup
 let dbInitialized = false;
@@ -24,7 +23,8 @@ export async function POST(request) {
     const contentType = request.headers.get("content-type") || "";
     let data;
     let paymentScreenshot = null;
-    let screenshotPath = null;
+    let screenshotUrl = null;
+    let screenshotFileName = null;
 
     if (contentType.includes("multipart/form-data")) {
       // Parse FormData for file upload
@@ -93,41 +93,29 @@ export async function POST(request) {
         );
       }
 
-      // Create uploads directory if it doesn't exist
-      const uploadsDir = path.join(
-        process.cwd(),
-        "public",
-        "uploads",
-        "payment-screenshots"
+      // Upload file to Supabase Storage
+      console.log("Uploading payment screenshot to Supabase Storage...");
+      const uploadResult = await uploadFileToSupabase(
+        paymentScreenshot,
+        'uploads',
+        'payment-screenshots'
       );
-      try {
-        await mkdir(uploadsDir, { recursive: true });
-      } catch (error) {
-        console.error("Error creating uploads directory:", error);
-      }
 
-      // Generate unique filename
-      const timestamp = Date.now();
-      const extension = paymentScreenshot.name.split(".").pop();
-      const filename = `payment_${timestamp}_${Math.random()
-        .toString(36)
-        .substring(7)}.${extension}`;
-      const filepath = path.join(uploadsDir, filename);
-
-      // Save file
-      try {
-        const bytes = await paymentScreenshot.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        await writeFile(filepath, buffer);
-        // Store just the filename, not the full path
-        screenshotPath = filename;
-      } catch (error) {
-        console.error("Error saving file:", error);
+      if (!uploadResult.success) {
+        console.error("Failed to upload file to Supabase:", uploadResult.error);
         return NextResponse.json(
-          { message: "Error uploading payment screenshot" },
+          { message: "Error uploading payment screenshot to cloud storage" },
           { status: 500 }
         );
       }
+
+      screenshotUrl = uploadResult.publicUrl;
+      screenshotFileName = uploadResult.fileName;
+      
+      console.log("File uploaded successfully:", {
+        fileName: screenshotFileName,
+        publicUrl: screenshotUrl
+      });
     }
 
     // Validate batch type
@@ -244,13 +232,22 @@ export async function POST(request) {
               phoneNumber: member.phoneNumber.trim(),
             }))
           : [],
-      paymentScreenshotPath: screenshotPath, // Store filename only
+      paymentScreenshotPath: screenshotUrl, // Store the full Supabase URL
+      paymentScreenshotFileName: screenshotFileName, // Store filename for potential deletion
     };
+
+    console.log('Saving registration data:', {
+      ...registrationData,
+      paymentScreenshotPath: screenshotUrl ? 'URL_PROVIDED' : null,
+      paymentScreenshotFileName: screenshotFileName
+    });
 
     // Create new registration
     const savedRegistration = await ProjectRegistrationModel.create(
       registrationData
     );
+
+    console.log('Registration saved successfully:', savedRegistration.id);
 
     // Return success response
     return NextResponse.json(
@@ -273,6 +270,7 @@ export async function POST(request) {
             second: "2-digit",
           }
         ),
+        paymentScreenshotUrl: screenshotUrl, // Include the URL in response
       },
       { status: 201 }
     );
@@ -360,10 +358,14 @@ export async function GET(request) {
 
     // Transform registrations to match frontend expectations
     const transformedRegistrations = registrations.map((reg) => {
-      console.log("Raw database row:", reg); // Debug log
-
+      console.log('Raw database row for', reg.full_name, ':', {
+        id: reg.id,
+        payment_screenshot_path: reg.payment_screenshot_path,
+        payment_screenshot_file_name: reg.payment_screenshot_file_name,
+      });
+      
       return {
-        _id: reg.id, // For compatibility with existing frontend code
+        _id: reg.id,
         id: reg.id,
         projectId: reg.project_id,
         fullName: reg.full_name,
@@ -376,18 +378,17 @@ export async function GET(request) {
         registrationType: reg.registration_type,
         projectTitle: reg.project_title,
         groupMembers: reg.group_members || [],
-        // Handle different possible field names for payment screenshot
-        paymentScreenshot:
-          reg.payment_screenshot_path || reg.payment_screenshot || null,
-        paymentScreenshotPath:
-          reg.payment_screenshot_path || reg.payment_screenshot || null,
+        // Use the Supabase URL directly
+        paymentScreenshot: reg.payment_screenshot_path || null,
+        paymentScreenshotPath: reg.payment_screenshot_path || null,
+        paymentScreenshotFileName: reg.payment_screenshot_file_name || null,
         status: reg.status,
         createdAt: reg.created_at,
         updatedAt: reg.updated_at,
       };
     });
 
-    console.log("Transformed registrations:", transformedRegistrations); // Debug log
+    console.log('Sending', transformedRegistrations.length, 'registrations to frontend');
 
     return NextResponse.json({
       registrations: transformedRegistrations,

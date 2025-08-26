@@ -125,25 +125,69 @@ export default function AdminDashboard() {
   };
 
   // Helper function to get payment screenshot URL
+  // Only the modified parts of the admin dashboard - replace the getPaymentScreenshotUrl function
+
+  // Enhanced helper function to get payment screenshot URL for Supabase
   const getPaymentScreenshotUrl = (registration) => {
-    if (registration.paymentScreenshotPath) {
-      // If it starts with /, it's already a full path
-      if (registration.paymentScreenshotPath.startsWith("/")) {
-        return registration.paymentScreenshotPath;
-      }
-      // Otherwise, construct the full path
-      return `/uploads/payment-screenshots/${registration.paymentScreenshotPath}`;
+    console.log("Getting screenshot URL for:", registration.fullName);
+    console.log("Available fields:", {
+      paymentScreenshot: registration.paymentScreenshot,
+      paymentScreenshotPath: registration.paymentScreenshotPath,
+      paymentScreenshotFileName: registration.paymentScreenshotFileName,
+    });
+
+    // Try different possible field names (Supabase URLs are complete)
+    const screenshot =
+      registration.paymentScreenshotPath || registration.paymentScreenshot;
+
+    if (!screenshot) {
+      console.log("No screenshot found for:", registration.fullName);
+      return null;
     }
 
-    // Legacy field name compatibility
-    if (registration.paymentScreenshot) {
-      if (registration.paymentScreenshot.startsWith("/")) {
-        return registration.paymentScreenshot;
-      }
-      return `/uploads/payment-screenshots/${registration.paymentScreenshot}`;
+    // If it's a Supabase URL (starts with https://), return as is
+    if (screenshot.startsWith("https://")) {
+      console.log("Supabase URL found:", screenshot);
+      return screenshot;
     }
 
-    return null;
+    // If it's any other HTTP URL, return as is
+    if (screenshot.startsWith("http")) {
+      console.log("HTTP URL found:", screenshot);
+      return screenshot;
+    }
+
+    // For backward compatibility with old file paths
+    if (screenshot.startsWith("/")) {
+      console.log("Legacy path found, converting:", screenshot);
+      return `/api/uploads${screenshot}`;
+    }
+
+    // If it's just a filename, assume it's a legacy upload
+    console.log("Legacy filename found, converting:", screenshot);
+    return `/api/uploads/payment-screenshots/${screenshot}`;
+  };
+
+  // Also add this function to handle image errors gracefully
+  const handleImageError = (event, registration) => {
+    console.error("Image failed to load for:", registration.fullName);
+    console.error("Failed URL:", event.target.src);
+
+    // Hide the image and show error message
+    event.target.style.display = "none";
+
+    // Create error message element if it doesn't exist
+    if (
+      !event.target.nextElementSibling ||
+      !event.target.nextElementSibling.classList.contains("image-error")
+    ) {
+      const errorDiv = document.createElement("div");
+      errorDiv.className =
+        "image-error w-32 h-32 bg-red-900/30 border border-red-600 rounded-lg flex items-center justify-center";
+      errorDiv.innerHTML =
+        '<span class="text-red-400 text-xs text-center">Image not available</span>';
+      event.target.parentNode.insertBefore(errorDiv, event.target.nextSibling);
+    }
   };
 
   useEffect(() => {
