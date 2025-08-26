@@ -149,7 +149,7 @@ const batchOptions = [
 
 // Updated payment details
 const PAYMENT_DETAILS = {
-  amount: 3000,
+  amount: 4000,
   upiId: "vyapar.173204604992@hdfcbank", // Updated UPI ID
   merchantName: "HIGBEC PVT LTD", // Updated merchant name
   qrCodeUrl:

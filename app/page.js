@@ -187,7 +187,11 @@ const HeroSection = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
                 >
-                  <h1 className="text-7xl md:text-8xl font-extrabold mb-6 leading-tight tracking-tight">
+                  {/* <h1 className="text-7xl md:text-8xl font-extrabold mb-6 leading-tight tracking-tight"> */}
+                  <h1
+                    className="font-extrabold mb-6 leading-tight tracking-tight"
+                    style={{ fontSize: "clamp(4rem, 5vw, 6rem)" }}
+                  >
                     {slide.title}
                   </h1>
                 </motion.div>
@@ -251,9 +255,9 @@ const AboutSection = () => {
 
             <div className="grid grid-cols-2 gap-6 mb-8">
               {[
-                { icon: Users, title: "500+", desc: "Students Trained" },
+                { icon: Users, title: "7000+", desc: "Students Trained" },
                 { icon: BookOpen, title: "50+", desc: "Courses Offered" },
-                { icon: Award, title: "95%", desc: "Success Rate" },
+                { icon: Award, title: "99%", desc: "Success Rate" },
                 { icon: Star, title: "4.9/5", desc: "Student Rating" },
               ].map((stat, index) => (
                 <div key={index} className="text-center">
@@ -732,7 +736,7 @@ const ProjectsSection = () => {
                     "Expert Mentorship",
                     "Industry Tools",
                     "Certificate",
-                    "Portfolio Ready",
+                    // "Portfolio Ready",
                   ].map((feature, idx) => (
                     <div
                       key={idx}
@@ -752,7 +756,7 @@ const ProjectsSection = () => {
                 <div className="bg-gradient-to-br from-gray-50 to-white p-8 rounded-2xl shadow-inner border border-gray-100">
                   <div className="mb-6">
                     <div className="text-4xl font-bold text-gray-800 mb-2">
-                      500+
+                      1500+
                     </div>
                     <div className="text-gray-600">Projects Completed</div>
                   </div>
@@ -781,7 +785,7 @@ const ProjectsSection = () => {
         </motion.div>
 
         {/* Stats Bar */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
@@ -801,7 +805,7 @@ const ProjectsSection = () => {
               <div className="text-sm text-gray-600">{stat.label}</div>
             </div>
           ))}
-        </motion.div>
+        </motion.div> */}
       </div>
     </section>
   );
@@ -1041,7 +1045,7 @@ const ContactSection = () => {
                   <p className="text-gray-600">
                     HIGBEC Pvt. Ltd.
                     <br />
-                    Thapasya, EVRA-143
+                    Ground Floor, Thapasya, EVRA-143
                     <br />
                     Edapazhinji, Thiruvananthapuram
                     <br />
@@ -1230,6 +1234,7 @@ const Footer = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4">Contact Info</h4>
             <div className="space-y-2 text-gray-400">
+              <p>Ground Floor,</p>
               <p>Thapasya, EVRA-143</p>
               <p>Kochar Road, Edapazhinji</p>
               <p>Thiruvananthapuram, Kerala</p>
